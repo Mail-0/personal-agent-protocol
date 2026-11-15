@@ -1,0 +1,38 @@
+{
+    "name": "@personal-agent-protocol/sdk",
+    "version": "0.1.0",
+    "description": "The Personal Agent Protocol (Poppy) for TypeScript: a Personal Agent client and Company-side verification, with Promises and async iterators.",
+    "license": "Apache-2.0",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/personal-agent-protocol/personal-agent-protocol",
+        "directory": "packages/sdk"
+    },
+    "engines": {
+        "node": ">=22.18"
+    },
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./testing": {
+            "source": "./src/testing.ts",
+            "types": "./dist/testing.d.ts",
+            "default": "./dist/testing.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "test": "node --conditions=source --test \"test/*.test.ts\""
+    },
+    "dependencies": {
+        "@personal-agent-protocol/core": "workspace:*"
+    }
+}
