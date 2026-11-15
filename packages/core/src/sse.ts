@@ -43,6 +43,6 @@ export async function* parseServerSentEvents(
             }
         }
     } finally {
-        reader.releaseLock();
+        await reader.cancel().catch(() => undefined);
     }
 }
