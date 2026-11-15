@@ -117,3 +117,24 @@ test("Poppy-Extensions: the last v wins, and a trailing comma declares none", ()
     assert.deepEqual(parseExtensions('"operations";v="2";v="3"'), { operations: "3" });
     assert.deepEqual(parseExtensions('"operations";v="3",'), {});
 });
+
+test("a final event ended by carriage returns is delivered, and the stream is released", async () => {
+    const body = new Response("data: a\r\r").body!;
+    const events = [];
+    for await (const e of parseServerSentEvents(body)) events.push(e);
+    assert.deepEqual(events, [{ event: "message", data: "a" }]);
+    assert.equal(body.locked, false);
+});
+
+test("an event split into one chunk per line is delivered whole", async () => {
+    const chunks = ["data: a\r\n", "data: b\r\n", "\r\n"].map((c) => new TextEncoder().encode(c));
+    const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+            for (const c of chunks) controller.enqueue(c);
+            controller.close();
+        },
+    });
+    const events = [];
+    for await (const e of parseServerSentEvents(body)) events.push(e);
+    assert.deepEqual(events, [{ event: "message", data: "a\nb" }]);
+});
