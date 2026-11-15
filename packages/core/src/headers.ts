@@ -24,9 +24,11 @@ export function parseExtensions(value: string | null | undefined): ExtensionVers
     while (rest.trim()) {
         const m = item.exec(rest);
         if (!m) return {};
-        const params = /;\s*v\s*=\s*"((?:[^"\\]|\\["\\])*)"/.exec(m[2]);
-        if (params) result[unquote(m[1])] = unquote(params[1]);
+        const versions = [...m[2].matchAll(/;\s*v\s*=\s*"((?:[^"\\]|\\["\\])*)"/g)];
+        const last = versions.at(-1);
+        if (last) result[unquote(m[1])] = unquote(last[1]);
         rest = rest.slice(m[0].length);
+        if (m[0].trimEnd().endsWith(",") && !rest.trim()) return {};
     }
     return result;
 }
