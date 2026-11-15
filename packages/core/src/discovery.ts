@@ -14,9 +14,20 @@ import { compatible } from "./session.ts";
 export const WELL_KNOWN_PATH = "/.well-known/poppy.json";
 const MAX_REDIRECTS = 5;
 
+export type Poppy04 = Omit<Poppy, "protocol_version" | "agent"> & {
+    protocol_version: "0.4";
+    agent?: {
+        protocols: (Omit<NonNullable<Poppy["agent"]>["protocols"][number], "description"> & {
+            description?: string;
+        })[];
+    };
+};
+
+export type DiscoveryDocument = Poppy | Poppy04;
+
 export type Discovered = {
     // The chosen version's document.
-    document: Poppy;
+    document: DiscoveryDocument;
     // The URL the chosen document came from, after redirects.
     url: string;
     // The protocol version chosen, as "major.minor".
@@ -46,7 +57,7 @@ export async function discover(domain: string, options: DiscoverOptions = {}): P
         throw discovery(`poppy.json redirected to ${fetched.url}, which isn't ${WELL_KNOWN_PATH}`);
     if (!fetched.response.ok)
         throw discovery(`${fetched.url} returned HTTP ${fetched.response.status}`);
-    const preferred = validate<Poppy>("poppy.schema.json", fetched.json);
+    const preferred = validateDocument(fetched.json, options.versions ?? ["1.0"]);
     if (preferred.organization.domain.toLowerCase() !== final.host)
         throw discovery(
             `organization.domain is ${preferred.organization.domain}, but ${final.host} served it`,
@@ -62,7 +73,7 @@ export async function discover(domain: string, options: DiscoverOptions = {}): P
             throw discovery(`the ${version} document isn't on ${final.host}`);
         const other = await getJson(url, options, 0);
         if (!other.response.ok) throw discovery(`${url} returned HTTP ${other.response.status}`);
-        document = validate<Poppy>("poppy.schema.json", other.json);
+        document = validateDocument(other.json, options.versions ?? ["1.0"]);
         if (document.protocol_version !== version || document.supported_versions)
             throw discovery(`${url} isn't a ${version} document`);
         if (document.organization.domain.toLowerCase() !== final.host)
@@ -106,7 +117,10 @@ export async function discover(domain: string, options: DiscoverOptions = {}): P
 
 // The newest version among protocol_version and supported_versions that is compatible with one
 // the Personal Agent implements (spec 3.4).
-export function selectVersion(document: Poppy, implemented: string[]): string | undefined {
+export function selectVersion(
+    document: DiscoveryDocument,
+    implemented: string[],
+): string | undefined {
     const offered = [document.protocol_version, ...Object.keys(document.supported_versions ?? {})];
     return offered
         .filter((v) => implemented.some((i) => compatible(i, v)))
@@ -173,4 +187,17 @@ function sameResource(a: string, b: string): boolean {
 
 function discovery(description: string): PoppyError {
     return new PoppyError("discovery_failed", description);
+}
+
+function validateDocument(value: unknown, implemented: string[]): DiscoveryDocument {
+    const legacy =
+        typeof value === "object" &&
+        value !== null &&
+        "protocol_version" in value &&
+        value.protocol_version === "0.4" &&
+        implemented.includes("0.4");
+    return validate<DiscoveryDocument>(
+        legacy ? "poppy-0.4.schema.json" : "poppy.schema.json",
+        value,
+    );
 }

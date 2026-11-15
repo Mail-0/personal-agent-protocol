@@ -7,6 +7,10 @@ you need.
 
 ## Personal Agent
 
+Set `versions: ["1.0", "0.4"]` in `createAgent` to opt into discovery of 0.4 Companies,
+including stores whose conversation protocols have no description. The default remains 1.0 only.
+This does not adapt authenticated sign-in behavior to older issuers.
+
 ```ts
 import { createAgent, importPrivateJwk, PoppyError } from "@personal-agent-protocol/sdk";
 

@@ -1,0 +1,151 @@
+{
+    "source": {
+        "recorded_at": "2026-11-15",
+        "urls": [
+            "https://kith.com/.well-known/poppy.json",
+            "https://kith.com/.well-known/oauth-protected-resource",
+            "https://shopify.com/.well-known/oauth-authorization-server/authentication/942252"
+        ]
+    },
+    "issuer": "https://shopify.com/authentication/942252",
+    "responses": {
+        "https://kith.com/.well-known/poppy.json": {
+            "protocol_version": "0.4",
+            "organization": {
+                "name": "Kith",
+                "domain": "kith.com"
+            },
+            "auth": {
+                "scopes": {
+                    "dev.ucp.shopping.checkout:manage": "Lets the agent prepare checkouts as the signed-in customer; the buyer completes the purchase. Usually not required to purchase: most stores allow guest checkout. If checkout returns customer_account_required, sign the buyer in or have them create an account. Otherwise, sign in only if the buyer already has an account with this store; existing customers may get discounts and other promotions."
+                },
+                "scope_hints": {
+                    "dev.ucp.shopping.checkout:manage": {
+                        "changes": "irreversible",
+                        "personal_data": true
+                    }
+                }
+            },
+            "agent": {
+                "protocols": [
+                    {
+                        "type": "ucp",
+                        "endpoint": "https://kith.com/.well-known/ucp"
+                    }
+                ]
+            },
+            "web": {},
+            "extensions": {
+                "ucp": [
+                    {
+                        "version": "1"
+                    }
+                ]
+            }
+        },
+        "https://kith.com/.well-known/oauth-protected-resource": {
+            "resource": "https://kith.com",
+            "authorization_servers": ["https://shopify.com/authentication/942252"],
+            "bearer_methods_supported": ["header"]
+        },
+        "https://shopify.com/.well-known/oauth-authorization-server/authentication/942252": {
+            "issuer": "https://shopify.com/authentication/942252",
+            "token_endpoint": "https://shopify.com/authentication/942252/oauth/token",
+            "authorization_endpoint": "https://shopify.com/authentication/942252/oauth/authorize",
+            "end_session_endpoint": "https://shopify.com/authentication/942252/logout",
+            "revocation_endpoint": "https://shopify.com/authentication/942252/oauth/revoke",
+            "jwks_uri": "https://shopify.com/authentication/942252/.well-known/jwks.json",
+            "scopes_supported": [
+                "openid",
+                "email",
+                "customer-account-api:full",
+                "customer-account-mcp-api:full",
+                "dev.ucp.shopping.checkout:manage",
+                "dev.ucp.shopping.catalog.search:read"
+            ],
+            "response_types_supported": ["code"],
+            "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["RS256"],
+            "claims_supported": [
+                "iss",
+                "sub",
+                "aud",
+                "exp",
+                "iat",
+                "nonce",
+                "sid",
+                "email",
+                "email_verified"
+            ],
+            "code_challenge_methods_supported": ["S256"],
+            "dpop_signing_alg_values_supported": ["ES256", "RS256"],
+            "authorization_response_iss_parameter_supported": true,
+            "client_id_metadata_document_supported": true,
+            "grant_types_supported": [
+                "authorization_code",
+                "refresh_token",
+                "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            ],
+            "ui_locales_supported": [
+                "bg",
+                "bn",
+                "ca",
+                "cs",
+                "da",
+                "de",
+                "el",
+                "en",
+                "es",
+                "et",
+                "eu",
+                "fi",
+                "fr",
+                "gl",
+                "gu",
+                "hi",
+                "hr",
+                "hu",
+                "id",
+                "it",
+                "ja",
+                "ka",
+                "ko",
+                "lt",
+                "lv",
+                "mr",
+                "ms",
+                "nb",
+                "nl",
+                "pl",
+                "pt-BR",
+                "pt-PT",
+                "ro",
+                "ru",
+                "sk",
+                "sl",
+                "sr",
+                "sv",
+                "ta",
+                "te",
+                "th",
+                "tr",
+                "uk",
+                "vi",
+                "zh-CN",
+                "zh-TW"
+            ],
+            "op_policy_uri": "https://www.shopify.com/legal/privacy",
+            "op_tos_uri": "https://www.shopify.com/legal/terms",
+            "protected_resources": [
+                "https://kith.com",
+                "https://kithnyc.account.myshopify.com",
+                "https://kithnyc.com",
+                "https://kithnyc.myshopify.com",
+                "https://shop.kithnyc.com",
+                "https://www.kith.com",
+                "https://www.kithnyc.com"
+            ]
+        }
+    }
+}

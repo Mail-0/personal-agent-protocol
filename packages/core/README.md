@@ -47,6 +47,11 @@ try {
 
 ## Types
 
+Discovery defaults to protocol 1.0. To also discover 0.4 Companies, pass
+`{ versions: ["1.0", "0.4"] }` to `discover`. Their protocol descriptions may be absent;
+`DiscoveryDocument` includes `Poppy04` to reflect that. Protocol 1.0 still requires descriptions.
+This compatibility option covers discovery, not differences in authenticated sign-in behavior.
+
 The types and the schemas used for validation are generated from `kit/company/schemas`, the
 protocol's JSON Schemas. After changing a schema, run `pnpm sdk:generate`. The tests fail when the
 generated files are out of date.
