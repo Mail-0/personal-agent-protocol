@@ -38,7 +38,9 @@ export type DiscoverOptions = HttpOptions & {
 
 // Discovers a Company from its domain, as spec 3 requires before a Personal Agent uses poppy.json.
 export async function discover(domain: string, options: DiscoverOptions = {}): Promise<Discovered> {
-    const fetched = await getJson(`https://${domain}${WELL_KNOWN_PATH}`, options, MAX_REDIRECTS);
+    const fetched = await getJson(`https://${domain}${WELL_KNOWN_PATH}`, options, MAX_REDIRECTS, {
+        "cache-control": "no-cache",
+    });
     const final = new URL(fetched.url);
     if (final.pathname !== WELL_KNOWN_PATH || final.search)
         throw discovery(`poppy.json redirected to ${fetched.url}, which isn't ${WELL_KNOWN_PATH}`);

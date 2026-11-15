@@ -66,6 +66,12 @@ importers:
 
   packages/core: {}
 
+  packages/sdk:
+    dependencies:
+      '@personal-agent-protocol/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@emnapi/runtime@1.11.3':
