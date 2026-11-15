@@ -17,3 +17,10 @@ doesn't exist, when a validator check's quote isn't in the docs word for word, o
 can't tell whether a new requirement applies to the Company (`lib/kit/checklist.ts`).
 
 Run the validator's tests with `pnpm test:kit`.
+
+## The packages
+
+`packages/` holds TypeScript packages for implementers. `packages/core` has no dependencies and runs
+in any runtime with `fetch` and WebCrypto; the SDKs build on it, so a protocol rule lives in core
+once. Its types and schemas are generated from `kit/company/schemas`: after changing a schema, run
+`pnpm sdk:generate` and commit what it writes. Run the packages' tests with `pnpm test:packages`.

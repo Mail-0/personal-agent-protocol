@@ -15,7 +15,9 @@
         "docs:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-hooks.mjs scripts/docs.ts sync",
         "docs:publish": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-hooks.mjs scripts/docs.ts publish",
         "docs:draft": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-hooks.mjs scripts/docs.ts draft",
-        "test:kit": "node --test \"kit/company/validate/test/*.test.ts\""
+        "test:kit": "node --test \"kit/company/validate/test/*.test.ts\"",
+        "sdk:generate": "node packages/core/scripts/generate.ts",
+        "test:packages": "pnpm --filter \"./packages/*\" test"
     },
     "dependencies": {
         "@mdx-js/mdx": "3.1.1",
