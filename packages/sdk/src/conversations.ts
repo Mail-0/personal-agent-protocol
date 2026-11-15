@@ -130,6 +130,7 @@ export class Conversation {
             try {
                 if (stream) {
                     const result = yield* this.#streamOnce(options);
+                    if (result === "events") transportFailures = 0;
                     if (result === "unsupported") stream = false;
                     else if (this.state.closed) return;
                     if (result !== "empty") continue;
