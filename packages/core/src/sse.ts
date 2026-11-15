@@ -15,8 +15,10 @@ export async function* parseServerSentEvents(
             const { done, value } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split(/\r\n|\r|\n/);
-            buffer = lines.pop() ?? "";
+            // A trailing \r may be the first half of \r\n, so it waits for the next chunk.
+            const complete = buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer;
+            const lines = complete.split(/\r\n|\r|\n/);
+            buffer = (lines.pop() ?? "") + buffer.slice(complete.length);
             for (const line of lines) {
                 if (line === "") {
                     if (event.data !== undefined) {
