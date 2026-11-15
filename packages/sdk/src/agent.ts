@@ -69,6 +69,7 @@ export function createAgent(options: AgentOptions): Agent {
         maxRetryAfter: options.maxRetryAfter ?? 60,
         sleep: options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
         delegations: new Map(),
+        refreshing: new Map(),
     };
     return {
         clientId: options.clientId,
@@ -81,6 +82,7 @@ export function createAgent(options: AgentOptions): Agent {
 type AgentContext = Required<Omit<AgentOptions, "delegationLifetime">> & {
     delegationLifetime?: number;
     delegations: Map<string, Promise<Delegated>>;
+    refreshing: Map<string, Promise<StoredTokens | undefined>>;
 };
 
 type Delegated = { key: SigningKey; delegation: string; exp: number };
@@ -120,7 +122,6 @@ export class Company {
 export class Session {
     #context: AgentContext;
     #options: { userId: string; agentId?: string; extensions?: ExtensionVersions };
-    #refreshing?: Promise<StoredTokens | undefined>;
     readonly company: Company;
     sid = newSessionId();
 
@@ -181,7 +182,8 @@ export class Session {
             }
             if (code === "invalid_token" && tokens && !refreshed) {
                 refreshed = true;
-                if (await this.#refresh(tokens)) continue;
+                await this.#refresh(tokens);
+                continue;
             }
             return response;
         }
@@ -293,7 +295,7 @@ export class Session {
     // Signs out by revoking the refresh token (spec 5.5). The Session continues signed out.
     async signOut(): Promise<void> {
         const tokens = await this.#context.tokens.get(this.company.identifier, this.userId);
-        if (tokens?.refreshToken) await revokeToken(this.#oauth(), tokens.refreshToken);
+        if (tokens?.refreshToken) await revokeToken(this.#oauth(false), tokens.refreshToken);
         await this.#context.tokens.delete(this.company.identifier, this.userId);
     }
 
@@ -362,27 +364,38 @@ export class Session {
         return (await this.#refresh(tokens)) ?? undefined;
     }
 
-    // One refresh at a time per Session. On invalid_grant the account is signed out (spec 5.5).
+    // One refresh at a time per Company and User, across Sessions, since refresh tokens rotate. On
+    // invalid_grant the account is signed out (spec 5.5). A refresh that finishes after sign-out
+    // stores nothing.
     #refresh(tokens: StoredTokens): Promise<StoredTokens | undefined> {
-        this.#refreshing ??= (async () => {
+        const key = `${this.company.identifier}\n${this.userId}`;
+        const pending = this.#context.refreshing.get(key);
+        if (pending) return pending;
+        const store = this.#context.tokens;
+        const run = (async () => {
             try {
                 if (!tokens.refreshToken) {
-                    await this.#context.tokens.delete(this.company.identifier, this.userId);
+                    await store.delete(this.company.identifier, this.userId);
                     return undefined;
                 }
-                const response = await refreshToken(this.#oauth(), tokens.refreshToken);
+                const response = await refreshToken(this.#oauth(false), tokens.refreshToken);
+                const current = await store.get(this.company.identifier, this.userId);
+                if (current?.refreshToken !== tokens.refreshToken) return current;
                 return await this.#store(response, tokens.refreshToken);
             } catch (error) {
                 if (error instanceof PoppyError && error.code === "invalid_grant") {
-                    await this.#context.tokens.delete(this.company.identifier, this.userId);
+                    const current = await store.get(this.company.identifier, this.userId);
+                    if (current?.refreshToken !== tokens.refreshToken) return current;
+                    await store.delete(this.company.identifier, this.userId);
                     return undefined;
                 }
                 throw error;
             } finally {
-                this.#refreshing = undefined;
+                this.#context.refreshing.delete(key);
             }
         })();
-        return this.#refreshing;
+        this.#context.refreshing.set(key, run);
+        return run;
     }
 
     async #store(response: TokenResponse, previousRefresh?: string): Promise<StoredTokens> {
@@ -398,10 +411,12 @@ export class Session {
         return tokens;
     }
 
-    #oauth(): OAuthClient {
+    // `signIn` is false for refresh and revocation, which keep working after auth.disabled (spec
+    // 3.2).
+    #oauth(signIn = true): OAuthClient {
         const issuer = this.company.info.issuer;
         if (!issuer) throw new PoppyError("not_offered", "the Company has no OAuth issuer");
-        if (this.company.info.document.auth?.disabled)
+        if (signIn && this.company.info.document.auth?.disabled)
             throw new PoppyError("not_offered", "the Company offers no sign-in (auth.disabled)");
         return {
             clientId: this.#context.clientId,

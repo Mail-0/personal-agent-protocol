@@ -125,6 +125,7 @@ export class Conversation {
     // before are skipped, unknown types are skipped, and state is kept in `state`.
     async *events(options: EventsOptions = {}): AsyncGenerator<Event> {
         let stream = options.stream ?? true;
+        let transportFailures = 0;
         while (!options.signal?.aborted) {
             try {
                 if (stream) {
@@ -138,6 +139,7 @@ export class Conversation {
                     const handled = this.#handle(event);
                     if (handled) yield handled;
                 }
+                transportFailures = 0;
                 if (response.cursor) this.cursor = response.cursor;
                 if (response.has_more) continue;
                 this.state = pickState(response);
@@ -147,6 +149,13 @@ export class Conversation {
                     this.cursor = undefined;
                     continue;
                 }
+                // A dropped connection reconnects from the saved cursor, up to 3 times in a row.
+                if (
+                    !(error instanceof PoppyError) &&
+                    !options.signal?.aborted &&
+                    ++transportFailures <= 3
+                )
+                    continue;
                 throw error;
             }
         }
