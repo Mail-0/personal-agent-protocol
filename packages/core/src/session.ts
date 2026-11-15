@@ -280,6 +280,7 @@ export function createSessionVerifier(options: SessionVerifierOptions): SessionV
 // Whether two protocol versions are compatible: the same major version and, before 1.0, the same
 // minor version (spec 3.4).
 export function compatible(a: string, b: string): boolean {
+    if (!/^\d+\.\d+$/.test(a) || !/^\d+\.\d+$/.test(b)) return false;
     const [am, an] = a.split(".");
     const [bm, bn] = b.split(".");
     return am === bm && (am !== "0" || an === bn);
