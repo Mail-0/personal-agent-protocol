@@ -298,10 +298,16 @@ function invalid(description: string): PoppyError {
 
 function safeDecode(jwt: string): DecodedJwt | undefined {
     try {
-        return jwt.split(".").length === 3 ? decodeJwt(jwt) : undefined;
+        if (jwt.split(".").length !== 3) return undefined;
+        const decoded = decodeJwt(jwt);
+        return isObject(decoded.header) && isObject(decoded.payload) ? decoded : undefined;
     } catch {
         return undefined;
     }
+}
+
+function isObject(value: unknown): boolean {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function safeVerify(verify: () => Promise<DecodedJwt | null>): Promise<DecodedJwt | null> {
