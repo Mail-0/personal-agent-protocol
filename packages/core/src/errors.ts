@@ -34,9 +34,11 @@ export class PoppyError extends Error {
     readonly body?: Record<string, unknown>;
     readonly retryAfter?: number;
     readonly challenges: Challenge[];
+    readonly #description?: string;
 
     constructor(code: string, description?: string, options: PoppyErrorOptions = {}) {
         super(description ? `${code}: ${description}` : code);
+        this.#description = description;
         this.name = "PoppyError";
         this.code = code;
         this.status = options.status ?? ERROR_STATUS[code];
@@ -47,7 +49,7 @@ export class PoppyError extends Error {
 
     get description(): string | undefined {
         const value = this.body?.error_description;
-        return typeof value === "string" ? value : undefined;
+        return typeof value === "string" ? value : this.#description;
     }
 }
 
@@ -76,7 +78,7 @@ export async function errorFromResponse(response: Response): Promise<PoppyError 
 export function errorResponse(error: PoppyError | string, description?: string): Response {
     const e = typeof error === "string" ? new PoppyError(error, description) : error;
     const body: Record<string, unknown> = { ...e.body, error: e.code };
-    const text = description ?? (typeof error === "string" ? undefined : e.description);
+    const text = description ?? e.description;
     if (text) body.error_description = text;
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (e.retryAfter !== undefined) headers["retry-after"] = String(e.retryAfter);
