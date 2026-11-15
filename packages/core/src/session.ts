@@ -289,7 +289,10 @@ export function compatible(a: string, b: string): boolean {
 
 // Drops expired entries once a cache is large, so a long-running verifier doesn't keep every
 // rotated delegation and client it has seen.
-function evictExpired<T extends { exp?: number; until?: number }>(cache: Map<string, T>, now: number) {
+function evictExpired<T extends { exp?: number; until?: number }>(
+    cache: Map<string, T>,
+    now: number,
+) {
     if (cache.size < 1000) return;
     for (const [key, entry] of cache) if ((entry.exp ?? entry.until ?? 0) <= now) cache.delete(key);
 }

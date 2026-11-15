@@ -193,3 +193,35 @@ test("client metadata is fetched without following redirects, and keys are cache
     });
     await rejects(v(await request(a)), "invalid_response", /redirected/);
 });
+
+test("a cached delegation doesn't vouch for another client_id", async () => {
+    const a = await agent();
+    const verify = verifier(a);
+    await verify(await request(a));
+    const other = "https://other.example/agent.json";
+    await rejects(verify(await request(a, { clientId: other })), "invalid_session", /iss/);
+});
+
+test("JWTs with a null header or payload, and malformed versions, are rejected", async () => {
+    const a = await agent();
+    const verify = verifier(a);
+    const signed = await request(a);
+    const nullPayload = `${signed.session!.split(".")[0]}.${btoa("null")}.x`;
+    await rejects(verify({ ...signed, session: nullPayload }), "invalid_session");
+    await rejects(verify({ ...signed, version: "1.banana" }), "version_unsupported");
+    await rejects(verify({ ...signed, version: "1" }), "version_unsupported");
+});
+
+test("generated keys carry their thumbprint as kid, and a root without kid can't sign", async () => {
+    const key = await generateKey();
+    assert.equal(key.publicJwk.kid, await thumbprint(key.publicJwk));
+    const { kid: _, ...bare } = key.publicJwk;
+    await assert.rejects(
+        signDelegation({
+            root: { ...key, publicJwk: bare },
+            delegated: key.publicJwk,
+            clientId: CLIENT_ID,
+        }),
+        TypeError,
+    );
+});

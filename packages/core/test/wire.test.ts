@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { blockedAddress } from "../src/address.ts";
+import { assertUsableUrl, blockedAddress } from "../src/address.ts";
 import { b64url, b64urlDecode, fromUtf8, randomId } from "../src/encoding.ts";
 import { errorFromResponse, errorResponse, PoppyError } from "../src/errors.ts";
 import { formatExtensions, parseExtensions } from "../src/headers.ts";
@@ -81,4 +81,39 @@ test("server-sent events parse, including unnamed and multi-line data", async ()
 test("documents validate against the protocol's schemas", () => {
     assert.deepEqual(schemaErrors("poppy.schema.json", POPPY), []);
     assert.ok(schemaErrors("poppy.schema.json", { protocol_version: "1" }).length);
+});
+
+test("IPv4-mapped IPv6 in hex form is blocked", async () => {
+    assert.ok(blockedAddress("::ffff:7f00:1"));
+    assert.ok(blockedAddress("::ffff:a00:1"));
+    assert.equal(blockedAddress("::ffff:5db8:d822"), undefined);
+    await assert.rejects(assertUsableUrl("https://[::ffff:127.0.0.1]/"), /loopback/);
+});
+
+test("a CRLF split across chunks doesn't end an event early", async () => {
+    const chunks = ["data: a\r", "\ndata: b\r\n\r\n"].map((c) => new TextEncoder().encode(c));
+    const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+            for (const c of chunks) controller.enqueue(c);
+            controller.close();
+        },
+    });
+    const events = [];
+    for await (const e of parseServerSentEvents(body)) events.push(e);
+    assert.deepEqual(events, [{ event: "message", data: "a\nb" }]);
+});
+
+test("a PoppyError's description reaches its response", async () => {
+    const response = errorResponse(
+        new PoppyError("invalid_session", "aud isn't this Company's identifier"),
+    );
+    assert.deepEqual(await response.json(), {
+        error: "invalid_session",
+        error_description: "aud isn't this Company's identifier",
+    });
+});
+
+test("Poppy-Extensions: the last v wins, and a trailing comma declares none", () => {
+    assert.deepEqual(parseExtensions('"operations";v="2";v="3"'), { operations: "3" });
+    assert.deepEqual(parseExtensions('"operations";v="3",'), {});
 });

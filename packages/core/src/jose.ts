@@ -173,7 +173,12 @@ export async function importRsaPrivateJwk(jwk: RsaPrivateJwk): Promise<RsaKey> {
         false,
         ["sign"],
     );
-    const publicJwk: RsaPublicJwk = { kty, n, e, kid: jwk.kid ?? (await rsaThumbprint({ kty, n, e })) };
+    const publicJwk: RsaPublicJwk = {
+        kty,
+        n,
+        e,
+        kid: jwk.kid ?? (await rsaThumbprint({ kty, n, e })),
+    };
     return { privateKey, publicJwk };
 }
 
