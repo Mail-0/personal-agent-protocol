@@ -113,11 +113,15 @@ export class Conversation {
     }
 
     // One read of the events after `cursor` (spec 8.5).
-    async read(options: { cursor?: string; wait?: number } = {}): Promise<EventsResponse> {
+    async read(
+        options: { cursor?: string; wait?: number; signal?: AbortSignal } = {},
+    ): Promise<EventsResponse> {
         const url = new URL(`${this.#url}/events`);
         if (options.cursor) url.searchParams.set("cursor", options.cursor);
         if (options.wait !== undefined) url.searchParams.set("wait", String(options.wait));
-        const { json } = await this.#session.request("GET", url.toString());
+        const { json } = await this.#session.request("GET", url.toString(), undefined, {
+            ...(options.signal ? { signal: options.signal } : {}),
+        });
         return validate<EventsResponse>("events-response.schema.json", json);
     }
 
@@ -135,7 +139,11 @@ export class Conversation {
                     else if (this.state.closed) return;
                     if (result !== "empty") continue;
                 }
-                const response = await this.read({ cursor: this.cursor, wait: options.wait ?? 30 });
+                const response = await this.read({
+                    cursor: this.cursor,
+                    wait: options.wait ?? 30,
+                    ...(options.signal ? { signal: options.signal } : {}),
+                });
                 for (const event of response.events) {
                     const handled = this.#handle(event);
                     if (handled) yield handled;

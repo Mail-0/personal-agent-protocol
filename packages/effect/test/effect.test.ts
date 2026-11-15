@@ -94,3 +94,13 @@ test("withSession verifies the request and answers Poppy errors with their respo
     assert.equal(ok?.status, 200);
     assert.deepEqual(await ok?.json(), { user: "usr_9" });
 });
+
+test("errors keep Retry-After, and unknown codes become PoppyRequestError", async () => {
+    const { PoppyError, errorResponse } = await import("@personal-agent-protocol/core");
+    const { toPoppyErrors, toPoppyError } = await import("../src/errors.ts");
+    const limited = toPoppyErrors(
+        new PoppyError("rate_limited", undefined, { status: 429, retryAfter: 7 }),
+    );
+    assert.equal(errorResponse(toPoppyError(limited as never)).headers.get("retry-after"), "7");
+    assert.equal(toPoppyErrors(new PoppyError("toString"))._tag, "PoppyRequestError");
+});

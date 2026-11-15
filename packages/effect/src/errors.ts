@@ -107,13 +107,18 @@ export function toPoppyErrors(error: unknown): PoppyErrors {
         const scope = error.challenges.find((c) => c.params.scope)?.params.scope;
         return new SignInRequired({ ...base, ...(scope ? { scope } : {}) });
     }
-    const Tagged = BY_CODE[error.code as keyof typeof BY_CODE] ?? PoppyRequestError;
+    const Tagged = Object.hasOwn(BY_CODE, error.code)
+        ? BY_CODE[error.code as keyof typeof BY_CODE]
+        : PoppyRequestError;
     return new Tagged(base);
 }
 
 // Back to a PoppyError, for writing a Company's error response.
 export function toPoppyError(error: Exclude<PoppyErrors, TransportError>): PoppyError {
     return new PoppyError(error.code, undefined, {
+        ...(error._tag === "RateLimited" && error.retryAfter !== undefined
+            ? { retryAfter: error.retryAfter }
+            : {}),
         ...(error.status !== undefined ? { status: error.status } : {}),
         ...(error.body !== undefined ? { body: error.body } : {}),
     });

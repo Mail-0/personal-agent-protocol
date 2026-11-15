@@ -103,8 +103,12 @@ function promise<A>(run: () => Promise<A>): Effect.Effect<A, PoppyErrors> {
 
 function wrapCompany(company: SdkCompany): Company {
     return {
-        identifier: company.identifier,
-        info: company.info,
+        get identifier() {
+            return company.identifier;
+        },
+        get info() {
+            return company.info;
+        },
         session: (options) => wrapSession(company.session(options)),
     };
 }
@@ -130,7 +134,10 @@ function wrapSession(session: SdkSession): Session {
             promise(() => session.completeSignIn(signIn, callback)),
         startDeviceSignIn: (options) =>
             promise(() => session.startDeviceSignIn(options)).pipe(
-                Effect.map(({ device, done }) => ({ device, done: promise(() => done) })),
+                Effect.map(({ device, done }) => {
+                    done.catch(() => undefined);
+                    return { device, done: promise(() => done) };
+                }),
             ),
         signOut: promise(() => session.signOut()),
     };
