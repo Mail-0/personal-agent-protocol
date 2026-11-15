@@ -60,6 +60,11 @@ export function thumbprint(jwk: EcPublicJwk): Promise<string> {
     return sha256(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y }));
 }
 
+// RFC 7638 JWK thumbprint of an RSA public key.
+export function rsaThumbprint(jwk: RsaPublicJwk): Promise<string> {
+    return sha256(JSON.stringify({ e: jwk.e, kty: jwk.kty, n: jwk.n }));
+}
+
 // Generates an ES256 key pair. With `extractable`, the private JWK is returned too, for keygen.
 export async function generateKey(
     extractable = false,
@@ -69,6 +74,7 @@ export async function generateKey(
         "verify",
     ])) as CryptoKeyPair;
     const publicJwk = publicPart(await crypto.subtle.exportKey("jwk", pair.publicKey));
+    publicJwk.kid = await thumbprint(publicJwk);
     if (!extractable) return { privateKey: pair.privateKey, publicJwk };
     const exported = await crypto.subtle.exportKey("jwk", pair.privateKey);
     return {
@@ -89,7 +95,8 @@ export async function importPrivateJwk(jwk: EcPrivateJwk): Promise<SigningKey> {
         false,
         ["sign"],
     );
-    const publicJwk: EcPublicJwk = { ...publicPart(jwk), ...(jwk.kid ? { kid: jwk.kid } : {}) };
+    const bare = publicPart(jwk);
+    const publicJwk: EcPublicJwk = { ...bare, kid: jwk.kid ?? (await thumbprint(bare)) };
     return { privateKey, publicJwk };
 }
 
@@ -146,6 +153,7 @@ export async function generateRsaKey(): Promise<RsaKey & { privateJwk: RsaPrivat
     const exported = await crypto.subtle.exportKey("jwk", pair.privateKey);
     const { d, p, q, dp, dq, qi } = exported as Record<string, string>;
     const publicJwk: RsaPublicJwk = { kty: "RSA", n: exported.n!, e: exported.e! };
+    publicJwk.kid = await rsaThumbprint(publicJwk);
     return {
         privateKey: pair.privateKey,
         publicJwk,
@@ -165,7 +173,7 @@ export async function importRsaPrivateJwk(jwk: RsaPrivateJwk): Promise<RsaKey> {
         false,
         ["sign"],
     );
-    const publicJwk: RsaPublicJwk = { kty, n, e, ...(jwk.kid ? { kid: jwk.kid } : {}) };
+    const publicJwk: RsaPublicJwk = { kty, n, e, kid: jwk.kid ?? (await rsaThumbprint({ kty, n, e })) };
     return { privateKey, publicJwk };
 }
 

@@ -51,8 +51,9 @@ export async function signDelegation(options: {
     const iat = options.iat ?? nowSeconds();
     const { kty, crv, x, y } = options.delegated;
     const rsa = options.root.publicJwk.kty === "RSA";
-    const header: Record<string, unknown> = { alg: rsa ? "PS384" : "ES256", typ: DELEGATION_TYP };
-    if (options.root.publicJwk.kid) header.kid = options.root.publicJwk.kid;
+    const kid = options.root.publicJwk.kid;
+    if (!kid) throw new TypeError("The root key needs the kid it has in jwks_uri (spec 5.2).");
+    const header = { alg: rsa ? "PS384" : "ES256", typ: DELEGATION_TYP, kid };
     const payload = {
         iss: options.clientId,
         cnf: { jwk: { kty, crv, x, y } },
