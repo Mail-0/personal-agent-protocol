@@ -1,0 +1,30 @@
+{
+    "name": "@personal-agent-protocol/core",
+    "version": "0.1.0",
+    "description": "Personal Agent Protocol (Poppy) rules with no dependencies: discovery, Session JWTs, delegations, verification, OAuth, errors, and wire types.",
+    "license": "Apache-2.0",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/personal-agent-protocol/personal-agent-protocol",
+        "directory": "packages/core"
+    },
+    "engines": {
+        "node": ">=22.18"
+    },
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "generate": "node scripts/generate.ts",
+        "test": "node scripts/generate.ts --check && node --test \"test/*.test.ts\""
+    }
+}

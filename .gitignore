@@ -3,3 +3,6 @@ node_modules/
 out/
 *.tsbuildinfo
 .env*
+
+# Package builds
+packages/*/dist/
