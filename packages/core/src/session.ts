@@ -181,12 +181,13 @@ export function createSessionVerifier(options: SessionVerifierOptions): SessionV
     const ttl = options.clientKeysTtl ?? 300;
     const resolve = options.resolveClient ?? ((id) => fetchClientKeys(id, options.http ?? {}));
     const clients = new Map<string, { keys: Promise<ClientKeys>; until: number }>();
-    const delegations = new Map<string, { jwk: EcPublicJwk; exp: number }>();
+    const delegations = new Map<string, { jwk: EcPublicJwk; exp: number; iss: string }>();
 
     function clientKeys(clientId: string): Promise<ClientKeys> {
         const cached = clients.get(clientId);
         if (cached && cached.until > now()) return cached.keys;
         const keys = resolve(clientId);
+        evictExpired(clients, now());
         clients.set(clientId, { keys, until: now() + ttl });
         keys.catch(() => clients.delete(clientId));
         return keys;
@@ -194,7 +195,7 @@ export function createSessionVerifier(options: SessionVerifierOptions): SessionV
 
     async function delegatedKey(delegation: string, clientId: string): Promise<EcPublicJwk> {
         const cached = delegations.get(delegation);
-        if (cached && cached.exp > now()) return cached.jwk;
+        if (cached && cached.exp > now() && cached.iss === clientId) return cached.jwk;
         const decoded = safeDecode(delegation);
         if (!decoded) throw invalid("the delegation isn't a JWT");
         const { header, payload } = decoded;
@@ -220,7 +221,8 @@ export function createSessionVerifier(options: SessionVerifierOptions): SessionV
         if (!jwk || jwk.kty !== "EC" || jwk.crv !== "P-256" || "d" in jwk)
             throw invalid("the delegation's cnf.jwk isn't a public P-256 key");
         const key = { kty: "EC", crv: "P-256", x: String(jwk.x), y: String(jwk.y) } as const;
-        delegations.set(delegation, { jwk: key, exp });
+        evictExpired(delegations, now());
+        delegations.set(delegation, { jwk: key, exp, iss: clientId });
         return key;
     }
 
@@ -281,6 +283,13 @@ export function compatible(a: string, b: string): boolean {
     const [am, an] = a.split(".");
     const [bm, bn] = b.split(".");
     return am === bm && (am !== "0" || an === bn);
+}
+
+// Drops expired entries once a cache is large, so a long-running verifier doesn't keep every
+// rotated delegation and client it has seen.
+function evictExpired<T extends { exp?: number; until?: number }>(cache: Map<string, T>, now: number) {
+    if (cache.size < 1000) return;
+    for (const [key, entry] of cache) if ((entry.exp ?? entry.until ?? 0) <= now) cache.delete(key);
 }
 
 function invalid(description: string): PoppyError {
