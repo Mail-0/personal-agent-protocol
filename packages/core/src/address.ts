@@ -44,6 +44,9 @@ export function blockedAddress(address: string): string | undefined {
     const v4 = parseIpv4(bare);
     const v6 = v4 === undefined ? parseIpv6(bare) : undefined;
     if (v4 === undefined && v6 === undefined) return undefined;
+    const mappedV4 = v6 !== undefined && v6 >> 32n === 0xffffn ? v6 & 0xffffffffn : undefined;
+    if (mappedV4 !== undefined)
+        return blockedAddress([24n, 16n, 8n, 0n].map((s) => (mappedV4 >> s) & 0xffn).join("."));
     const blocked =
         v4 !== undefined
             ? IPV4_BLOCKED.some(([net, prefix]) => inRange(v4, parseIpv4(net)!, prefix, 32))
