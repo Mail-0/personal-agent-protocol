@@ -66,6 +66,19 @@ importers:
 
   packages/core: {}
 
+  packages/effect:
+    dependencies:
+      '@personal-agent-protocol/core':
+        specifier: workspace:*
+        version: link:../core
+      '@personal-agent-protocol/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      effect:
+        specifier: ^4.0.0
+        version: 4.1.4
+
   packages/sdk:
     dependencies:
       '@personal-agent-protocol/core':
@@ -444,6 +457,9 @@ packages:
 
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
+
+  effect@4.1.4:
+    resolution: {integrity: sha512-Tgrv/9FN+TZYyOn8XSli+fVqAfwDrDAkiX5Uu9vztINb675VTQdhD0gWI5Kzvhlh9QqzjZvw72iugqw5pwoghQ==}
 
   esast-util-from-estree@2.0.0:
     resolution: {integrity: sha512-4CyanoAudUSBAn5K13H4JhsMH6L9ZP7XbLVe/dKybkxMO7eDyLsT8UHl9TRNrU2Gr9nz+FovfSIjuXWJ81uVwQ==}
@@ -1130,6 +1146,8 @@ snapshots:
   devlop@1.1.0:
     dependencies:
       dequal: 2.0.3
+
+  effect@4.1.4: {}
 
   esast-util-from-estree@2.0.0:
     dependencies:

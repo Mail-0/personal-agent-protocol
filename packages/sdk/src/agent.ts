@@ -194,10 +194,11 @@ export class Session {
         method: string,
         url: string,
         body?: unknown,
-        opts: { signedOut?: boolean; accept?: string } = {},
+        opts: { signedOut?: boolean; accept?: string; signal?: AbortSignal } = {},
     ): Promise<{ response: Response; json: T }> {
         const init: RequestInit = {
             method,
+            ...(opts.signal ? { signal: opts.signal } : {}),
             headers: {
                 accept: opts.accept ?? "application/json",
                 ...(body !== undefined ? { "content-type": "application/json" } : {}),

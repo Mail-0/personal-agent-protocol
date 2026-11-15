@@ -41,7 +41,8 @@ export class PoppyError extends Error {
         this.#description = description;
         this.name = "PoppyError";
         this.code = code;
-        this.status = options.status ?? ERROR_STATUS[code];
+        this.status =
+            options.status ?? (Object.hasOwn(ERROR_STATUS, code) ? ERROR_STATUS[code] : undefined);
         this.body = options.body;
         this.retryAfter = options.retryAfter;
         this.challenges = options.challenges ?? [];
